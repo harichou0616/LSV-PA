@@ -2,9 +2,10 @@
 .inputs A B C D
 .outputs S
 .subckt ultimate_adder a=A b=B c=C d=D cin1=CIN1 cin2=CIN2 s=S cout1=COUT1 cout2=COUT2
-.subckt register in=COUT1 out=CIN1
-.subckt register in=COUT2 out=COUT2_delay
-.subckt register in=COUT2_delay out=CIN2
+
+.latch COUT1 CIN1 re 0
+.latch COUT2 COUT2_delay re 0
+.latch COUT2_delay CIN2 re 0
 .end
 
 .model ultimate_adder
