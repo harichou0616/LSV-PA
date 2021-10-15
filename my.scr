@@ -1,0 +1,3 @@
+read 4bitadder.blif
+strash
+lsv_print_msfc
