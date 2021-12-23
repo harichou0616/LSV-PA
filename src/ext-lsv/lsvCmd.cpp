@@ -17,12 +17,78 @@ struct PackageRegistrationManager {
   PackageRegistrationManager() { Abc_FrameAddInitializer(&frame_initializer); }
 } lsvPackageRegistrationManager;
 
+void printout(bool xflag, int btar, int cresua, int dnfina, const std::vector<int>& xvector,const std::vector<int>& yvector,sat_solver *solver){
+  xflag=true; int counter1 = 0;int counter2 = 0;
+  std::vector<int>roots;
+  btar=xvector.size();
+  int *pFinal;
+  lit *aption = new lit[xvector.size()*2];
 
-void print_one_ORbid(sat_solver *sol3,const std::vector<int>& xvector,const std::vector<int>& yvector){
-
+  for (int i=0;i<btar;i++){
+    roots.push_back(0);
+    counter1++;
+  }
+  counter1 = 0;
+    for(int i=0;i<roots.size();i++){
+      counter1++;
+      for(int j=i+1;j<roots.size();j++){
+        counter2++;
+        roots[i]=1;
+        roots[j]=2;
+        for(int q=0;q<roots.size();q++){
+          switch (roots[q])
+          {
+          case 0:
+            aption[q]=toLitCond(xvector[q],1);
+            aption[q+roots.size()]=toLitCond(yvector[q],1);
+            break;
+          case 1:
+            aption[q]=toLitCond(xvector[q],1);
+            aption[q+roots.size()]=toLitCond(yvector[q],0);
+            break;
+          case 2:
+            aption[q]=toLitCond(xvector[q],0);
+            aption[q+roots.size()]=toLitCond(yvector[q],1);
+            break;
+          }
+        }
+        cresua=sat_solver_solve(solver,aption,aption+xvector.size()*2,0,0,0,0);
+        if(cresua!=l_True){
+          printf("1\n");
+          dnfina=sat_solver_final(solver,&pFinal); 
+          std::vector<int>ans;
+          for (int e=0;e<xvector.size();e++){
+            ans.push_back(3);
+          }
+          for (int e=0;e<dnfina;e++){
+            for(int r=0;r<xvector.size();r++){
+              if(xvector[r]==pFinal[e]/2){
+                ans[r]^=1;
+                break;
+              }else if(yvector[r]==pFinal[e]/2){
+                ans[r]^=2;
+                break;
+              }
+            }
+          }
+          for(int e=0;e<ans.size();e++){
+            if(ans[e]!=3){
+              printf("%d",ans[e]);
+            }else{
+              printf("1");
+            }
+          }
+          printf("\n");
+          xflag=false;
+          break;
+        }
+        roots[i]=0;
+        roots[j]=0;
+      }
+      if(!xflag)break;
+    }
+    if(xflag)printf("0\n");
 }
-
-
 void lsv_print_ORbid(Abc_Ntk_t*  pNtk){
   
   Abc_Obj_t* pObj;Aig_Obj_t* pObj2;
@@ -33,10 +99,6 @@ void lsv_print_ORbid(Abc_Ntk_t*  pNtk){
   int i,j;
   Abc_NtkForEachPo(pNtk, pObj, i){
     printf("PO %s support partition: ",Abc_ObjName(pObj));
-    int printflag= 0;
-    std::vector<int>safarosha;
-    int result;  int nresult;
-    int *p_resulter;
     std::vector<int> fvector; std::vector<int> xvector; std::vector<int> yvector;    
     abcntk=Abc_NtkCreateCone(pNtk,Abc_ObjFanin0(pObj),Abc_ObjName(pObj),0);
     if (Abc_ObjFaninC0(pObj)) Abc_NtkPo(abcntk, 0)->fCompl0 ^= 1;
@@ -92,59 +154,9 @@ void lsv_print_ORbid(Abc_Ntk_t*  pNtk){
       assert( ba[0] );
       assert( ba[1] );
     }
-    lit *alpha = new lit[xvector.size()*2];
-    for (int i=0;i<xvector.size();i++)safarosha.push_back(0);
-    for(int i=0;i<safarosha.size();i++){
-      for(int j=i+1;j<safarosha.size();j++){
-        safarosha[i]=1;
-        safarosha[j]=2;
-        for(int k=0;k<safarosha.size();k++){
-          switch (safarosha[i]){
-          case 0:
-            alpha[k]=toLitCond(xvector[k],1);
-            alpha[k+safarosha.size()]=toLitCond(yvector[k],1);
-          break;
-          case 1:
-            alpha[k]=toLitCond(xvector[k],1);
-            alpha[k+safarosha.size()]=toLitCond(yvector[k],0);
-          break;
-          case 3:
-            alpha[k]=toLitCond(xvector[k],0);
-            alpha[k+safarosha.size()]=toLitCond(yvector[k],1);
-            break;
-          }
-        }
-        result=sat_solver_solve(sol3,alpha,alpha+xvector.size()*2,0,0,0,0);
-        if(result!=l_True){
-          printflag=1;
-          printf("1\n");
-          nresult=sat_solver_final(sol3,&p_resulter); 
-          std::vector<int>final;
-          for (int x=0;x<xvector.size();x++)final.push_back(3);
-          for (int x=0;x<nresult;x++){
-            for(int y=0;y<xvector.size();y++){
-              if(xvector[y]==p_resulter[x]/2){
-                final[y] = final[y] ^ 1;
-                break;
-              }else if(yvector[y]==p_resulter[x]/2){
-                final[y]= final[y] ^ 2;
-                break;
-              }
-            }
-          }
-          for(int x=0;x<final.size();x++){
-            if(final[x]!=3)printf("%d",final[x]);
-            else  printf("1");
-          }
-          printf("\n");
-          break;
-        }
-        safarosha[i]=0;
-        safarosha[j]=0;
-      }
-      if(printflag==1)break;
-    }
-    if(printflag==0)printf("0\n");
+    bool flag = false;
+    int array[3] = {0};
+    printout(flag, array[0],array[1],array[2], xvector,yvector,sol3);
   }
 }
 
