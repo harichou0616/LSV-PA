@@ -18,22 +18,8 @@ struct PackageRegistrationManager {
 } lsvPackageRegistrationManager;
 
 
-void buff( sat_solver * pSat, int iA, int iB, int iV, int Comp )
-{
-    lit * L_array1 = new lit [3];
-    lit * L_array2 = new lit [3];
-    int *a = new int[2];
-    L_array1[0] = toLitCond( iA, 0 );
-    L_array2[0] = toLitCond( iA, 1 );
-    L_array1[1] = toLitCond( iB, !Comp );
-    L_array2[1] = toLitCond( iB, Comp );
-    L_array1[2] = toLitCond( iV, 0 );
-    L_array2[2] = toLitCond( iV, 0 );
-    a[0] = sat_solver_addclause( pSat, L_array1, L_array1 + 3 );
-    a[1] = sat_solver_addclause( pSat, L_array2, L_array2 + 3 );
-    assert( !(iA < 0) & !(iB < 0) & !(iV < 0) );
-    assert( a[0] );
-    assert( a[1] );
+void print_one_ORbid(sat_solver *sol3,const std::vector<int>& xvector,const std::vector<int>& yvector){
+
 }
 
 
@@ -44,17 +30,16 @@ void lsv_print_ORbid(Abc_Ntk_t*  pNtk){
   Abc_Ntk_t * abcntk;
   Aig_Man_t *aigman;
   sat_solver *sol1;sat_solver *sol2;sat_solver *sol3;
-  int counter[3];
   int i,j;
-  counter[3]=0;
   Abc_NtkForEachPo(pNtk, pObj, i){
-    std::vector<int> f; std::vector<int> a; std::vector<int> b;
-    counter[3]++;
-    
+    printf("PO %s support partition: ",Abc_ObjName(pObj));
+    int printflag= 0;
+    std::vector<int>safarosha;
+    int result;  int nresult;
+    int *p_resulter;
+    std::vector<int> fvector; std::vector<int> xvector; std::vector<int> yvector;    
     abcntk=Abc_NtkCreateCone(pNtk,Abc_ObjFanin0(pObj),Abc_ObjName(pObj),0);
     if (Abc_ObjFaninC0(pObj)) Abc_NtkPo(abcntk, 0)->fCompl0 ^= 1;
-    printf("PO %s support partition: ",Abc_ObjName(pObj));
-    
     aigman = Abc_NtkToDar(abcntk, 0, 0);
     C1 = Cnf_Derive(aigman, 0); 
     C2 = Cnf_DataDup(C1);
@@ -63,18 +48,20 @@ void lsv_print_ORbid(Abc_Ntk_t*  pNtk){
     C3 = Cnf_DataDup(C2);
     Cnf_DataLift(C3,C2->nVars);
     Aig_ManForEachCi(aigman,pObj2,j){
-      f.push_back(C1->pVarNums[pObj2->Id]);
+      fvector.push_back(C1->pVarNums[pObj2->Id]);
     }
     assert(Aig_ManCoNum(aigman)==1);
     assert(C2->nVars==C3->nVars);
     sol1 = (sat_solver *)Cnf_DataWriteIntoSolver(C1, 1, 0);
     sol2 = (sat_solver *)Cnf_DataWriteIntoSolverInt(sol1, C2, 1, 0);
     sol3 = (sat_solver *)Cnf_DataWriteIntoSolverInt(sol2, C3, 1, 0);
-
-    for(int k=0;k<f.size();k++){
-      a.push_back(sat_solver_addvar(sol3));
-      b.push_back(sat_solver_addvar(sol3));
-
+    if(sol1==0 || sol2==0){
+      printf("0\n");
+      continue;
+    }
+    for(int k=0;k<fvector.size();k++){
+      xvector.push_back(sat_solver_addvar(sol3));
+      yvector.push_back(sat_solver_addvar(sol3));
       lit * L_array1 = new lit [3];
       lit * L_array2 = new lit [3];
       lit * L_array3 = new lit [3];
@@ -82,106 +69,84 @@ void lsv_print_ORbid(Abc_Ntk_t*  pNtk){
       int *aa = new int[2];
       int *ba = new int[2];
 
-      L_array1[0] = toLitCond( f[k], 0 );
-      L_array2[0] = toLitCond( f[k], 1 );
-      L_array3[0] = toLitCond( f[k], 0 );
-      L_array4[0] = toLitCond( f[k], 1 );
-      L_array1[1] = toLitCond( f[k]+C2->nVars, 1 );
-      L_array2[1] = toLitCond( f[k]+C2->nVars, 0 );
-      L_array3[1] = toLitCond( f[k]+2*C2->nVars, 1 );
-      L_array4[1] = toLitCond( f[k]+2*C2->nVars, 0 );
-      L_array1[2] = toLitCond( a[k], 0 );
-      L_array2[2] = toLitCond( a[k], 0 );
-      L_array3[2] = toLitCond( b[k], 0 );
-      L_array4[2] = toLitCond( b[k], 0 );
+      L_array1[0] = toLitCond( fvector[k], 0 );
+      L_array2[0] = toLitCond( fvector[k], 1 );
+      L_array3[0] = toLitCond( fvector[k], 0 );
+      L_array4[0] = toLitCond( fvector[k], 1 );
+      L_array1[1] = toLitCond( fvector[k]+C2->nVars, 1 );
+      L_array2[1] = toLitCond( fvector[k]+C2->nVars, 0 );
+      L_array3[1] = toLitCond( fvector[k]+2*C2->nVars, 1 );
+      L_array4[1] = toLitCond( fvector[k]+2*C2->nVars, 0 );
+      L_array1[2] = toLitCond( xvector[k], 0 );
+      L_array2[2] = toLitCond( xvector[k], 0 );
+      L_array3[2] = toLitCond( yvector[k], 0 );
+      L_array4[2] = toLitCond( yvector[k], 0 );
       aa[0] = sat_solver_addclause( sol3, L_array1, L_array1 + 3 );
       aa[1] = sat_solver_addclause( sol3, L_array2, L_array2 + 3 );
       ba[0] = sat_solver_addclause( sol3, L_array3, L_array3 + 3 );
       ba[1] = sat_solver_addclause( sol3, L_array4, L_array4 + 3 );
-      assert( !(f[k] < 0) & !(f[k]+C2->nVars < 0) & !(a[k] < 0) );
+      assert( !(fvector[k] < 0) & !(fvector[k]+C2->nVars < 0) & !(xvector[k] < 0) );
       assert( aa[0] );
       assert( aa[1] );
-      assert( !(f[k] < 0) & !(f[k]+2*C2->nVars < 0) & !(b[k] < 0) );
+      assert( !(fvector[k] < 0) & !(fvector[k]+2*C2->nVars < 0) & !(yvector[k] < 0) );
       assert( ba[0] );
       assert( ba[1] );
     }
-    if(!sol1){
-      printf("0\n");
-      continue;
-    }
-    if(!sol2){
-      printf("0\n");
-      continue;
-    }
-    int flag=0;
-    int *i_array = new int[3];
-    int *pointer;
-    i_array[0]=a.size();
-    lit *aption = new lit[a.size()*2];
-    int *sd = new int[i_array[0]]
-    int size=  sizeof(sd)
-    for(int i=0;i<size;i++){
-      for(int j=i+1;j<size;j++){
-        sd[i]=1; sd[j]=2;
-        for(int i=0;i<size;i++){
-          switch (sd[i]){
+    lit *alpha = new lit[xvector.size()*2];
+    for (int i=0;i<xvector.size();i++)safarosha.push_back(0);
+    for(int i=0;i<safarosha.size();i++){
+      for(int j=i+1;j<safarosha.size();j++){
+        safarosha[i]=1;
+        safarosha[j]=2;
+        for(int k=0;k<safarosha.size();k++){
+          switch (safarosha[i]){
           case 0:
-            aption[i]=toLitCond(a[i],1);
-            aption[i+size]=toLitCond(b[i],1);
-            break;
+            alpha[k]=toLitCond(xvector[k],1);
+            alpha[k+safarosha.size()]=toLitCond(yvector[k],1);
+          break;
           case 1:
-            aption[i]=toLitCond(a[i],1);
-            aption[i+size]=toLitCond(b[i],0);
-            break;
-          case 2:
-            aption[i]=toLitCond(a[i],0);
-            aption[i+size]=toLitCond(b[i],1);
+            alpha[k]=toLitCond(xvector[k],1);
+            alpha[k+safarosha.size()]=toLitCond(yvector[k],0);
+          break;
+          case 3:
+            alpha[k]=toLitCond(xvector[k],0);
+            alpha[k+safarosha.size()]=toLitCond(yvector[k],1);
             break;
           }
         }
-        i_array[1]=sat_solver_solve(sol3,aption,aption+a.size()*2,0,0,0,0);
-        if(i_array[1]!=l_True){
-          i_array[2]=sat_solver_final(sol3,&pointer); 
-          std::vector<int>an;
+        result=sat_solver_solve(sol3,alpha,alpha+xvector.size()*2,0,0,0,0);
+        if(result!=l_True){
+          printflag=1;
           printf("1\n");
-          for (int i=0; i<a.size();i++)an.push_back(3);
-          for (int i=0; i<i_array[2];i++){
-            for(int j=0;j<a.size();j++){
-              if(a[j]==pointer[i]/2){
-                an[j]= an[j] ^ 1;
+          nresult=sat_solver_final(sol3,&p_resulter); 
+          std::vector<int>final;
+          for (int x=0;x<xvector.size();x++)final.push_back(3);
+          for (int x=0;x<nresult;x++){
+            for(int y=0;y<xvector.size();y++){
+              if(xvector[y]==p_resulter[x]/2){
+                final[y] = final[y] ^ 1;
                 break;
-              }
-              else if(b[j]==pointer[i]/2){
-                an[j] = an[j] ^ 2;
+              }else if(yvector[y]==p_resulter[x]/2){
+                final[y]= final[y] ^ 2;
                 break;
               }
             }
           }
-          for(int i=0;i <an.size();i++){
-            if(an[i]!=3)printf("%d",an[i]);
-            else printf("1");
+          for(int x=0;x<final.size();x++){
+            if(final[x]!=3)printf("%d",final[x]);
+            else  printf("1");
           }
-          flag=1;
           printf("\n");
           break;
         }
-          sd[i]=0;
-          sd[j]=0;
+        safarosha[i]=0;
+        safarosha[j]=0;
       }
-        if(flag==1)break;
+      if(printflag==1)break;
     }
-    if(flag==0)printf("0\n");  
+    if(printflag==0)printf("0\n");
   }
 }
-
-
-
-
-
-
-
-
-
 
 
 int lsv_or_bidec(Abc_Frame_t* pAbc, int argc, char** argv){
