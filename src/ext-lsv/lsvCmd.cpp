@@ -1,11 +1,11 @@
 #include "base/abc/abc.h"
 #include "base/main/main.h"
 #include "base/main/mainInt.h"
-#include "sat/cnf/cnf.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include "sat/cnf/cnf.h"
 using namespace std;
 extern "C" Aig_Man_t *Abc_NtkToDar(Abc_Ntk_t *pNtk, int fExors, int fRegisters);
 static int lsv_or_bidec(Abc_Frame_t* pAbc, int argc, char** argv);
@@ -25,8 +25,7 @@ struct PackageRegistrationManager {
 } lsvPackageRegistrationManager;
 
 void Lsv_NtkPrintNodes(Abc_Ntk_t* pNtk) {
-  Abc_Obj_t*
-   pObj;
+  Abc_Obj_t* pObj;
   int i;
   Abc_NtkForEachNode(pNtk, pObj, i) {
     printf("Object Id = %d, name = %s\n", Abc_ObjId(pObj), Abc_ObjName(pObj));
